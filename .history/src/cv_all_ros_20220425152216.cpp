@@ -28,7 +28,7 @@ static cv::Mat to_render_depth(const cv::Mat& depth){
     cv::Mat mask;
     depth.convertTo(mask, CV_8U, -5, 255);
     //mask = mask(cv::Rect(0, mask.rows * 0.18, mask.cols, mask.rows * (1 - 0.18)));
-    cv::applyColorMap(mask, mask, cv::COLORMAP_OCEAN);
+    cv::applyColorMap(mask, mask, cv::COLORMAP_PLASMA);
     return mask;
 }
 

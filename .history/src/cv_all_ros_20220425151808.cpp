@@ -23,14 +23,14 @@ static bool exists(const string& path){
 }
 
 
-static cv::Mat to_render_depth(const cv::Mat& depth){
+// static cv::Mat to_render_depth(const cv::Mat& depth){
 
-    cv::Mat mask;
-    depth.convertTo(mask, CV_8U, -5, 255);
-    //mask = mask(cv::Rect(0, mask.rows * 0.18, mask.cols, mask.rows * (1 - 0.18)));
-    cv::applyColorMap(mask, mask, cv::COLORMAP_OCEAN);
-    return mask;
-}
+//     cv::Mat mask;
+//     depth.convertTo(mask, CV_8U, -5, 255);
+//     //mask = mask(cv::Rect(0, mask.rows * 0.18, mask.cols, mask.rows * (1 - 0.18)));
+//     cv::applyColorMap(mask, mask, cv::COLORMAP_PLASMA);
+//     return mask;
+// }
 
 static void merge_images(
     const cv::Mat& image, const cv::Mat& road,
@@ -133,7 +133,5 @@ void CvAll::inference(cv::Mat &image){
             cv::rectangle(image, cv::Point(box.left-3, box.bottom), cv::Point(box.left+text_width, box.bottom+50), color, -1);
             cv::putText(image, caption, cv::Point(box.left, box.bottom+40), 0, 1.5, cv::Scalar::all(0), 2, 16);
         }
-        cv::imshow("image", to_render_depth(depth));
-        cv::waitKey(1);
         INFO("Process");
 }

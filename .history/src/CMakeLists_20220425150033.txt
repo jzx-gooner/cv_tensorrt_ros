@@ -102,16 +102,23 @@ link_directories(
 
 #GLOB_RECURSE
 file(GLOB_RECURSE tensorrt_cpp_srcs ${CMAKE_SOURCE_DIR}/tensorRT/*.cpp)
+message("************************88 = = = ${tensorrt_cpp_srcs}")
 
 file(GLOB_RECURSE cuda_srcs ${CMAKE_SOURCE_DIR}/*.cu)
 
 cuda_add_library(plugin_list SHARED ${cuda_srcs})
+
+
+set(tensorrt_cpp
+        
+        )
 
 set(SRC
         cv_all_ros.cpp
         main.cpp
         app-ldrn/ldrn.cpp
         app-yolo/yolo.cpp
+        
         )
 
 add_executable(${PROJECT_NAME} ${SRC} ${tensorrt_cpp_srcs})

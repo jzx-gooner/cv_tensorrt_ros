@@ -1,0 +1,3 @@
+<launch>
+    <node name="cv_tensorrt_ros" pkg="cv_tensorrt_ros" type="cv_tensorrt_ros" output="screen"/>
+</launch>

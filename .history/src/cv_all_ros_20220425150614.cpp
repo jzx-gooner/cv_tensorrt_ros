@@ -23,14 +23,14 @@ static bool exists(const string& path){
 }
 
 
-static cv::Mat to_render_depth(const cv::Mat& depth){
+// static cv::Mat to_render_depth(const cv::Mat& depth){
 
-    cv::Mat mask;
-    depth.convertTo(mask, CV_8U, -5, 255);
-    //mask = mask(cv::Rect(0, mask.rows * 0.18, mask.cols, mask.rows * (1 - 0.18)));
-    cv::applyColorMap(mask, mask, cv::COLORMAP_OCEAN);
-    return mask;
-}
+//     cv::Mat mask;
+//     depth.convertTo(mask, CV_8U, -5, 255);
+//     //mask = mask(cv::Rect(0, mask.rows * 0.18, mask.cols, mask.rows * (1 - 0.18)));
+//     cv::applyColorMap(mask, mask, cv::COLORMAP_PLASMA);
+//     return mask;
+// }
 
 static void merge_images(
     const cv::Mat& image, const cv::Mat& road,
@@ -70,12 +70,17 @@ static void merge_images(
 static bool build_model(){
 
     bool success = true;
-    if(!exists("/home/jzx/usv_models/yolov5s.engine"))
-        success = success && TRT::compile(TRT::Mode::FP32, 5, "/home/jzx/usv_models/yolov5s.onnx", "/home/jzx/usv_models/yolov5s.engine");
+    if(!exists("yolov5s.trtmodel"))
+        success = success && TRT::compile(TRT::Mode::FP32, 5, "/home/jzx/usv_models/yolov5s.onnx", "yolov5s.trtmodel");
 
-    if(!exists("/home/jzx/usv_models/depth_estimation.engine"))
-        success = success && TRT::compile(TRT::Mode::FP32, 5, "/home/jzx/usv_models/depth_estimation.onnx", "/home/jzx/usv_models/depth_estimation.engine");
+    if(!exists("road-segmentation-adas.trtmodel"))
+        success = success && TRT::compile(TRT::Mode::FP32, 5, "road-segmentation-adas.onnx", "road-segmentation-adas.trtmodel");
+    
+    if(!exists("ldrn_kitti_resnext101_pretrained_data_grad_256x512.trtmodel"))
+        success = success && TRT::compile(TRT::Mode::FP32, 5, "ldrn_kitti_resnext101_pretrained_data_grad_256x512.onnx", "ldrn_kitti_resnext101_pretrained_data_grad_256x512.trtmodel");
 
+    if(!exists("new-lane.trtmodel"))
+        success = success && TRT::compile(TRT::Mode::FP32, 5, "new-lane.onnx", "new-lane.trtmodel");
     return true;
 }
 
@@ -84,15 +89,15 @@ void CvAll::init() {
     
     ROS_INFO("<< cv all go!");
     //camera_array/camera/image_raw/compressed
-    img_sub = nh_.subscribe<sensor_msgs::CompressedImage>("/camera_array/camera/image_raw/compressed", 1,
+    img_sub = nh_.subscribe<sensor_msgs::CompressedImage>("camera/color/image_raw/compressed", 1,
                                                           &CvAll::imgCallback, this);
     nh_.param<bool>("is_debug", debug_, true);
 
     //如果没有模型，则编译模型
     build_model();
     //加载模型
-    detection_infer_ = Yolo::create_infer("/home/jzx/usv_models/yolov5s.engine", Yolo::Type::V5, 0, 0.25, 0.45);
-    depth_infer_ = Ldrn::create_infer("/home/jzx/usv_models/depth_estimation.engine", 0);
+    detection_infer_ = Yolo::create_infer("yolov5s.trtmodel", Yolo::Type::V5, 0, 0.25, 0.45);
+    depth_infer_ = Ldrn::create_infer("ldrn_kitti_resnext101_pretrained_data_grad_256x512.trtmodel", 0);
 
 }
 
@@ -133,7 +138,5 @@ void CvAll::inference(cv::Mat &image){
             cv::rectangle(image, cv::Point(box.left-3, box.bottom), cv::Point(box.left+text_width, box.bottom+50), color, -1);
             cv::putText(image, caption, cv::Point(box.left, box.bottom+40), 0, 1.5, cv::Scalar::all(0), 2, 16);
         }
-        cv::imshow("image", to_render_depth(depth));
-        cv::waitKey(1);
         INFO("Process");
 }
