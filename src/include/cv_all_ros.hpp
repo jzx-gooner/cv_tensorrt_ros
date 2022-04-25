@@ -35,6 +35,7 @@
 #include <builder/trt_builder.hpp>
 #include <app-yolo/yolo.hpp>
 #include <app-ldrn/ldrn.hpp>
+#include <app-bisenet/bisenet.hpp>
 
 using namespace TRT;
 
@@ -60,7 +61,7 @@ private:
 
     std::shared_ptr<Yolo::Infer> detection_infer_;
     std::shared_ptr<Ldrn::Infer> depth_infer_;
-    // std::shared_ptr<Infer> depth_infer_;
+    std::shared_ptr<Bisenet::Infer> segmentation_infer_;
     // std::shared_ptr<Infer> classification_infer_;
 
 };

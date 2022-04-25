@@ -76,6 +76,9 @@ static bool build_model(){
     if(!exists("/home/jzx/usv_models/depth_estimation.engine"))
         success = success && TRT::compile(TRT::Mode::FP32, 5, "/home/jzx/usv_models/depth_estimation.onnx", "/home/jzx/usv_models/depth_estimation.engine");
 
+     if(!exists("/home/jzx/usv_models/bisenet.engine"))
+        success = success && TRT::compile(TRT::Mode::FP32, 5, "/home/jzx/usv_models/bisenet.onnx", "/home/jzx/usv_models/bisenet.engine");
+
     return true;
 }
 
@@ -93,6 +96,7 @@ void CvAll::init() {
     //加载模型
     detection_infer_ = Yolo::create_infer("/home/jzx/usv_models/yolov5s.engine", Yolo::Type::V5, 0, 0.25, 0.45);
     depth_infer_ = Ldrn::create_infer("/home/jzx/usv_models/depth_estimation.engine", 0);
+    segmentation_infer_ = Bisenet::create_infer("/home/jzx/usv_models/bisenet.engine", 0);
 
 }
 
@@ -113,8 +117,10 @@ void CvAll::inference(cv::Mat &image){
 
         auto boxes_fut = detection_infer_->commit(image);
         auto depth_fut = depth_infer_->commit(image);
+        auto segmentation_fut = segmentation_infer_->commit(image);
         auto boxes = boxes_fut.get();
         auto depth = depth_fut.get();
+        auto segmentation = segmentation_fut.get();
         cv::resize(depth, depth, image.size());
 
         for(auto& box : boxes){
@@ -134,6 +140,7 @@ void CvAll::inference(cv::Mat &image){
             cv::putText(image, caption, cv::Point(box.left, box.bottom+40), 0, 1.5, cv::Scalar::all(0), 2, 16);
         }
         cv::imshow("image", to_render_depth(depth));
+        cv::imshow("segmentation", segmentation);
         cv::waitKey(1);
         INFO("Process");
 }

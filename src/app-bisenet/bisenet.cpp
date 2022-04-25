@@ -1,4 +1,4 @@
-#include "ldrn.hpp"
+#include "bisenet.hpp"
 #include <atomic>
 #include <mutex>
 #include <queue>
@@ -10,11 +10,12 @@
 #include <common/monopoly_allocator.hpp>
 #include <common/cuda_tools.hpp>
 
-namespace Ldrn{
+
+namespace Bisenet{
     using namespace cv;
     using namespace std;
 
-    void decode_to_depth_invoker(const float* input, unsigned char* output, int edge, cudaStream_t stream);
+    void decode_to_mask_invoker(const float* input, unsigned char* output, int edge, cudaStream_t stream);
 
     using ControllerImpl = InferController
     <
@@ -33,11 +34,12 @@ namespace Ldrn{
         virtual bool startup(
             const string& file, int gpuid
         ){
-            float mean[] = {0.485, 0.456, 0.406};
-            float std[] = {0.229, 0.224, 0.225};
+            float mean[] = {0.3257, 0.3690, 0.3223};
+            float std[] = {0.2112, 0.2148, 0.2115};
             normalize_ = CUDAKernel::Norm::mean_std(
                 mean, std, 1/255.0f, CUDAKernel::ChannelType::Invert
             );
+            normalize_ = CUDAKernel::Norm::None();
             return ControllerImpl::startup(make_tuple(file, gpuid));
         }
 
@@ -57,8 +59,9 @@ namespace Ldrn{
             engine->print();
 
             int max_batch_size = engine->get_max_batch_size();
-            auto input         = engine->tensor("input.1");
-            auto output        = engine->tensor("2499");
+
+            auto input         = engine->tensor("input_image");
+            auto output        = engine->tensor("preds");
 
             input_width_       = input->size(3);
             input_height_      = input->size(2);
@@ -67,6 +70,9 @@ namespace Ldrn{
             gpu_               = gpuid;
             result.set_value(true);
             input->resize_single_dim(0, max_batch_size).to_gpu();
+
+            TRT::Tensor mask({max_batch_size, input_height_, input_width_, 3}, TRT::DataType::UInt8);
+            mask.to_gpu();
 
             vector<Job> fetch_jobs;
             while(get_jobs_and_wait(fetch_jobs, max_batch_size)){
@@ -88,10 +94,19 @@ namespace Ldrn{
 
                 engine->forward(false);
                 for(int ibatch = 0; ibatch < infer_batch_size; ++ibatch){
+                    
+                    auto& job                       = fetch_jobs[ibatch];
+                    unsigned char* image_based_mask = mask.gpu<unsigned char>(ibatch);
+                    float* image_based_output       = output->gpu<float>(ibatch);
+                    decode_to_mask_invoker(image_based_output, image_based_mask, input_width_ * input_height_, stream_);
+                }
 
-                    auto& job                 = fetch_jobs[ibatch];
-                    float* image_based_output = output->cpu<float>(ibatch);
-                    job.pro->set_value(cv::Mat(input_height_, input_width_, CV_32F, image_based_output).clone());
+                mask.to_cpu();
+                for(int ibatch = 0; ibatch < infer_batch_size; ++ibatch){
+                    
+                    auto& job                         = fetch_jobs[ibatch];
+                    unsigned char* image_based_output = mask.cpu<unsigned char>(ibatch);
+                    job.pro->set_value(cv::Mat(input_height_, input_width_, CV_8UC3, image_based_output).clone());
                 }
                 fetch_jobs.clear();
             }
@@ -193,12 +208,7 @@ namespace Ldrn{
 
     void image_to_tensor(const cv::Mat& image, shared_ptr<TRT::Tensor>& tensor, int ibatch){
 
-        CUDAKernel::Norm normalize;
-        float mean[] = {0.485, 0.456, 0.406};
-        float std[] = {0.229, 0.224, 0.225};
-        normalize = CUDAKernel::Norm::mean_std(
-            mean, std, 1/255.0f, CUDAKernel::ChannelType::Invert
-        );
+        CUDAKernel::Norm normalize = CUDAKernel::Norm::None();
         Size input_size(tensor->size(3), tensor->size(2));
 
         size_t size_image      = image.cols * image.rows * 3;

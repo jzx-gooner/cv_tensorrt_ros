@@ -105,6 +105,8 @@ file(GLOB_RECURSE tensorrt_cpp_srcs ${CMAKE_SOURCE_DIR}/tensorRT/*.cpp)
 
 file(GLOB_RECURSE cuda_srcs ${CMAKE_SOURCE_DIR}/*.cu)
 
+message("cuda_path = ${cuda_srcs}")
+
 cuda_add_library(plugin_list SHARED ${cuda_srcs})
 
 set(SRC
@@ -112,6 +114,7 @@ set(SRC
         main.cpp
         app-ldrn/ldrn.cpp
         app-yolo/yolo.cpp
+        app-bisenet/bisenet.cpp
         )
 
 add_executable(${PROJECT_NAME} ${SRC} ${tensorrt_cpp_srcs})
