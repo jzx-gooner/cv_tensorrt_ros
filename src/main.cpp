@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "cv_all");
     CvAll ca;
     ca.init();
-    // ROS_INFO("<< cv all go!");
-    // ros::spin();
+    ROS_INFO("<< cv all go!");
+    ros::spin();
     return 0;
 }

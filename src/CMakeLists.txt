@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(cv_all)
+project(cv_tensorrt_ros)
 add_definitions(-std=c++14)
 option(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
 set(CMAKE_CXX_STANDARD 14)
@@ -100,25 +100,31 @@ link_directories(
     ${CUDNN_DIR}/lib
 )
 
-# file(GLOB_RECURSE cpp_srcs ${PROJECT_SOURCE_DIR}/src/*.cpp)
-# file(GLOB_RECURSE cuda_srcs ${PROJECT_SOURCE_DIR}/src/*.cu)
-# 指定SRC环境变量
+#GLOB_RECURSE
+file(GLOB_RECURSE tensorrt_cpp_srcs ${CMAKE_SOURCE_DIR}/tensorRT/*.cpp)
+message("************************88 = = = ${tensorrt_cpp_srcs}")
+
+file(GLOB_RECURSE cuda_srcs ${CMAKE_SOURCE_DIR}/*.cu)
+
+cuda_add_library(plugin_list SHARED ${cuda_srcs})
+
+
+set(tensorrt_cpp
+        
+        )
+
 set(SRC
         cv_all_ros.cpp
         main.cpp
         app-ldrn/ldrn.cpp
         app-yolo/yolo.cpp
-        app-yolo/yolo-decode.cu
-        tensorRT/common/cuda_tools.cpp
-        tensorRT/common/ilogger.cpp
-        tensorRT/common/json.cpp
-        tensorRT/common/preprocess_kernel.cu
-        tensorRT/common/trt_tensor.cpp
-        tensorRT/infer/trt_infer.cpp
+        
         )
+
+add_executable(${PROJECT_NAME} ${SRC} ${tensorrt_cpp_srcs})
 # 指定可执行文件 有cuda文件和无cuda文件
 # add_executable(${PROJECT_NAME} ${SRC})
-cuda_add_executable(${PROJECT_NAME} ${SRC})
+# cuda_add_executable(${PROJECT_NAME} ${SRC})
 # 指定链接可执行文件
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} ${catkin_LIBRARIES})
 
@@ -130,7 +136,7 @@ target_link_libraries(
 
 target_link_libraries(${PROJECT_NAME} nvinfer nvinfer_plugin)
 target_link_libraries(${PROJECT_NAME} cuda cublas cudart cudnn)
-target_link_libraries(${PROJECT_NAME} protobuf pthread)
+target_link_libraries(${PROJECT_NAME} protobuf pthread plugin_list)
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
 target_link_libraries(${PROJECT_NAME} "/usr/lib/x86_64-linux-gnu/libtiff.so")
 

@@ -1,8 +1,0 @@
-prefix=/home/jzx/cv_ros/src/cv_final_ros/src/build/devel
-
-Name: cv_all
-Description: Description of cv_all
-Version: 0.0.1
-Cflags: -I/home/jzx/cv_ros/src/cv_final_ros/src/include
-Libs: -L${prefix}/lib -lcv_all
-Requires: roscpp rospy geometry_msgs sensor_msgs std_msgs dynamic_reconfigure
